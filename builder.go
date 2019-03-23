@@ -248,6 +248,24 @@ func (b *Builder) Select(cols ...interface{}) *Builder {
 	return b
 }
 
+// AddSelect add additional selects
+func (b *Builder) AddSelect(cols ...interface{}) *Builder {
+	for _, c := range cols {
+		var col Column
+		switch x := c.(type) {
+		case Column:
+			col = x
+		case string:
+			col = columnString(x)
+		}
+		b.selects = append(b.selects, col)
+	}
+	if b.optype == condType {
+		b.optype = selectType
+	}
+	return b
+}
+
 // And sets AND condition
 func (b *Builder) And(cond Cond) *Builder {
 	b.cond = And(b.cond, cond)
