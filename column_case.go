@@ -64,11 +64,6 @@ func (v columnCase) WriteTo(w Writer) error {
 		return err
 	}
 
-	_, err = fmt.Fprint(w, "end)")
-	if err != nil {
-		return err
-	}
-
 	if v.alias != nil {
 		_, err := fmt.Fprintf(w, " as %s", *v.alias)
 		if err != nil {
