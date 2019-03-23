@@ -9,7 +9,7 @@ import (
 )
 
 // Select creates a select Builder
-func Select(cols ...string) *Builder {
+func Select(cols ...interface{}) *Builder {
 	builder := &Builder{cond: NewCond()}
 	return builder.Select(cols...)
 }
@@ -30,7 +30,7 @@ func (b *Builder) selectWriteTo(w Writer) error {
 	}
 	if len(b.selects) > 0 {
 		for i, s := range b.selects {
-			if _, err := fmt.Fprint(w, s); err != nil {
+			if err := s.WriteTo(w); err != nil {
 				return err
 			}
 			if i != len(b.selects)-1 {

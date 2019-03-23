@@ -22,11 +22,16 @@ const (
 )
 
 const (
+	// POSTGRES PostgresSql dialect
 	POSTGRES = "postgres"
-	SQLITE   = "sqlite3"
-	MYSQL    = "mysql"
-	MSSQL    = "mssql"
-	ORACLE   = "oracle"
+	// SQLITE sqlite3 dialect
+	SQLITE = "sqlite3"
+	// MYSQL mysql dialect
+	MYSQL = "mysql"
+	// MSSQL microsoft sql server dialect
+	MSSQL = "mssql"
+	// ORACLE oracle dialect
+	ORACLE = "oracle"
 )
 
 type join struct {
@@ -54,7 +59,7 @@ type Builder struct {
 	from       string
 	subQuery   *Builder
 	cond       Cond
-	selects    []string
+	selects    []Column
 	joins      []join
 	unions     []union
 	limitation *limit
@@ -225,8 +230,18 @@ func (b *Builder) FullJoin(joinTable string, joinCond interface{}) *Builder {
 }
 
 // Select sets select SQL
-func (b *Builder) Select(cols ...string) *Builder {
-	b.selects = cols
+func (b *Builder) Select(cols ...interface{}) *Builder {
+	b.selects = make([]Column, 0, len(cols))
+	for _, c := range cols {
+		var col Column
+		switch x := c.(type) {
+		case Column:
+			col = x
+		case string:
+			col = columnString(x)
+		}
+		b.selects = append(b.selects, col)
+	}
 	if b.optype == condType {
 		b.optype = selectType
 	}
@@ -376,7 +391,7 @@ func (b *Builder) ToSQL() (string, []interface{}, error) {
 	return sql, w.args, nil
 }
 
-// ToBoundSQL
+// ToBoundSQL ...
 func (b *Builder) ToBoundSQL() (string, error) {
 	w := NewWriter()
 	if err := b.WriteTo(w); err != nil {

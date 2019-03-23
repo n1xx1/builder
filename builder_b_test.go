@@ -162,7 +162,9 @@ func randInsertByCondition(rgc *randGenConf) *Builder {
 
 	eqs := Eq{}
 	for i := 0; i < times; i++ {
-		eqs[fields[rand.Intn(len(fields))]] = "expected"
+		sel := fields[rand.Intn(len(fields))]
+		selStr := string(sel.(columnString))
+		eqs[selStr] = "expected"
 	}
 
 	b := Insert(eqs).From("table1")
@@ -181,7 +183,9 @@ func randUpdateByCondition(rgc *randGenConf) *Builder {
 
 	eqs := Eq{}
 	for i := 0; i < times; i++ {
-		eqs[fields[rand.Intn(len(fields))]] = randVal()
+		sel := fields[rand.Intn(len(fields))]
+		selStr := string(sel.(columnString))
+		eqs[selStr] = randVal()
 	}
 
 	b := Update(eqs).From("table1")
@@ -198,9 +202,20 @@ func randSelectByCondition(dialect string, rgc *randGenConf) *Builder {
 	if rgc.allowSubQuery {
 		cpRgc := *rgc
 		cpRgc.allowSubQuery = false
-		b = Dialect(dialect).Select(randSelects()...).From(randQuery(dialect, &cpRgc), randTableName(0))
+
+		selects := randSelects()
+		selectsI := make([]interface{}, len(selects))
+		for i, v := range selects {
+			selectsI[i] = v
+		}
+		b = Dialect(dialect).Select(selectsI...).From(randQuery(dialect, &cpRgc), randTableName(0))
 	} else {
-		b = Dialect(dialect).Select(randSelects()...).From(randTableName(0))
+		selects := randSelects()
+		selectsI := make([]interface{}, len(selects))
+		for i, v := range selects {
+			selectsI[i] = v
+		}
+		b = Dialect(dialect).Select(selectsI...).From(randTableName(0))
 	}
 	if rgc.allowJoin {
 		b = randJoin(b, 3)
@@ -230,13 +245,18 @@ func randDialect() string {
 	return dialects[rand.Intn(len(dialects))]
 }
 
-func randSelects() []string {
+func randSelects() []Column {
 	if rand.Intn(1000) > 900 {
-		return []string{"*"}
+		return []Column{columnString("*")}
 	}
-
 	rdx := rand.Intn(len(queryFields) / 2)
-	return queryFields[rdx:]
+	ret := queryFields[rdx:]
+
+	retI := make([]Column, len(ret))
+	for i, v := range ret {
+		retI[i] = columnString(v)
+	}
+	return retI
 }
 
 func randTableName(offset int) string {
@@ -258,7 +278,7 @@ func randJoin(b *Builder, lessThan int) *Builder {
 	return b
 }
 
-func randCond(selects []string, lessThan int) Cond {
+func randCond(selects []Column, lessThan int) Cond {
 	if len(selects) <= 0 {
 		return nil
 	}
@@ -267,7 +287,9 @@ func randCond(selects []string, lessThan int) Cond {
 
 	times := rand.Intn(lessThan)
 	for i := 0; i < times; i++ {
-		cond = cond.And(Eq{selects[rand.Intn(len(selects))]: randVal()})
+		sel := selects[rand.Intn(len(selects))]
+		selStr := string(sel.(columnString))
+		cond = cond.And(Eq{selStr: randVal()})
 	}
 
 	return cond
@@ -277,9 +299,8 @@ func randLimit(b *Builder) *Builder {
 	r := rand.Intn(1000) + 1
 	if r > 500 {
 		return b.Limit(r, 1000)
-	} else {
-		return b.Limit(r)
 	}
+	return b.Limit(r)
 }
 
 func randOrderBy(b *Builder) *Builder {

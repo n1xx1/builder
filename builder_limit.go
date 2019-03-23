@@ -26,12 +26,12 @@ func (b *Builder) limitWriteTo(w Writer) error {
 		switch strings.ToLower(strings.TrimSpace(b.dialect)) {
 		case ORACLE:
 			if len(b.selects) == 0 {
-				b.selects = append(b.selects, "*")
+				b.selects = append(b.selects, columnString("*"))
 			}
 
 			var final *Builder
 			selects := b.selects
-			b.selects = append(selects, "ROWNUM RN")
+			b.selects = append(selects, columnString("ROWNUM RN"))
 
 			var wb *Builder
 			if b.optype == unionType {
@@ -41,14 +41,19 @@ func (b *Builder) limitWriteTo(w Writer) error {
 				wb = b
 			}
 
+			selectsInterface := make([]interface{}, len(selects))
+			for i, v := range selects {
+				selectsInterface[i] = v
+			}
+
 			if limit.offset == 0 {
-				final = Dialect(b.dialect).Select(selects...).From(wb, "at").
+				final = Dialect(b.dialect).Select(selectsInterface...).From(wb, "at").
 					Where(Lte{"at.RN": limit.limitN})
 			} else {
 				sub := Dialect(b.dialect).Select("*").
 					From(b, "at").Where(Lte{"at.RN": limit.offset + limit.limitN})
 
-				final = Dialect(b.dialect).Select(selects...).From(sub, "att").
+				final = Dialect(b.dialect).Select(selectsInterface...).From(sub, "att").
 					Where(Gt{"att.RN": limit.offset})
 			}
 
