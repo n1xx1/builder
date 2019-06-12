@@ -8,14 +8,17 @@ import (
 	"fmt"
 )
 
+// Operator is the operator to use inside the Op condition
 type Operator int
 
 const (
+	// OpEq is the = operator
 	OpEq Operator = iota
+	// OpNeq is the <> operator
 	OpNeq
 )
 
-type op struct {
+type opCond struct {
 	op Operator
 	a  interface{}
 	b  interface{}
@@ -32,9 +35,9 @@ func (o Operator) String() string {
 	}
 }
 
-// Operator generate a comparison operator SQL
+// Op generates a comparison operator SQL
 func Op(o Operator, a interface{}, b interface{}) Cond {
-	return op{o, a, b}
+	return &opCond{o, a, b}
 }
 
 func writeTerm(v interface{}, w Writer) error {
@@ -69,7 +72,7 @@ func writeTerm(v interface{}, w Writer) error {
 }
 
 // WriteTo writes SQL to Writer
-func (o op) WriteTo(w Writer) error {
+func (o *opCond) WriteTo(w Writer) error {
 	if err := writeTerm(o.a, w); err != nil {
 		return err
 	}
@@ -83,16 +86,16 @@ func (o op) WriteTo(w Writer) error {
 }
 
 // And implements And with other conditions
-func (o op) And(conds ...Cond) Cond {
+func (o *opCond) And(conds ...Cond) Cond {
 	return And(o, And(conds...))
 }
 
 // Or implements Or with other conditions
-func (o op) Or(conds ...Cond) Cond {
+func (o *opCond) Or(conds ...Cond) Cond {
 	return Or(o, Or(conds...))
 }
 
 // IsValid tests if this op is valid
-func (o op) IsValid() bool {
+func (o *opCond) IsValid() bool {
 	return true
 }
