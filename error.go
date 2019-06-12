@@ -37,4 +37,6 @@ var (
 	ErrUnnamedDerivedTable = errors.New("Every derived table must have its own alias")
 	// ErrInconsistentDialect Inconsistent dialect in same builder
 	ErrInconsistentDialect = errors.New("Inconsistent dialect in same builder")
+	// ErrUnexpectedExistsQuery unexpected query inside EXISTS condition
+	ErrUnexpectedExistsQuery = errors.New("Unexpected query inside EXISTS condition")
 )
