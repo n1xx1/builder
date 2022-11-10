@@ -4,6 +4,7 @@ import "fmt"
 
 // Column select column
 type Column interface {
+	IsColumnType()
 	WriteTo(Writer) error
 }
 
@@ -17,20 +18,21 @@ func (v columnString) WriteTo(w Writer) error {
 	return nil
 }
 
-type columnAs struct {
-	val   string
-	alias string
+func (v columnString) IsColumnType() {}
+
+type columnMssqlTop struct {
+	top int
+	sub Column
 }
 
-// As create alias for select
-func As(val string, alias string) Column {
-	return columnAs{val, alias}
-}
-
-func (v columnAs) WriteTo(w Writer) error {
-	_, err := fmt.Fprintf(w, "%s as %s", v.val, v.alias)
-	if err != nil {
+func (v *columnMssqlTop) WriteTo(w Writer) error {
+	if _, err := fmt.Fprintf(w, "TOP %d ", v.top); err != nil {
+		return err
+	}
+	if err := v.sub.WriteTo(w); err != nil {
 		return err
 	}
 	return nil
 }
+
+func (v *columnMssqlTop) IsColumnType() {}

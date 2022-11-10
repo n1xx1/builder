@@ -15,7 +15,7 @@ type columnCase struct {
 }
 
 // Case ...
-func Case(defVal string, whens ...When) Column {
+func Case(defVal string, whens ...When) interface{} {
 	var parts = make([]When, 0, len(whens))
 	for _, val := range whens {
 		parts = append(parts, val)
@@ -27,7 +27,7 @@ func Case(defVal string, whens ...When) Column {
 }
 
 // CaseAs ...
-func CaseAs(alias string, defVal string, whens ...When) Column {
+func CaseAs(alias string, defVal string, whens ...When) interface{} {
 	var parts = make([]When, 0, len(whens))
 	for _, val := range whens {
 		parts = append(parts, val)

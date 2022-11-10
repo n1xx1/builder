@@ -1,51 +1,49 @@
-// Copyright 2016 The Xorm Authors. All rights reserved.
+// Copyright 2022 The Xorm Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package builder
 
 import (
-	"fmt"
+	"errors"
+	"io"
 )
 
 type condExists struct {
-	b *Builder
+	subQuery *Builder
 }
 
-// Exists defines equals exists
-func Exists(b *Builder) Cond {
-	return &condExists{b}
-}
+var _ Cond = condExists{}
 
-// WriteTo writes SQL to Writer
-func (e *condExists) WriteTo(w Writer) error {
-	if e.b.optype != selectType {
-		return ErrUnexpectedExistsQuery
+// Exists returns Cond via condition
+func Exists(subQuery *Builder) Cond {
+	return &condExists{
+		subQuery: subQuery,
 	}
+}
 
-	if _, err := fmt.Fprint(w, "EXISTS ("); err != nil {
+func (condExists condExists) WriteTo(w Writer) error {
+	if !condExists.IsValid() {
+		return errors.New("exists condition is nov valid")
+	}
+	if _, err := io.WriteString(w, "EXISTS ("); err != nil {
 		return err
 	}
-	if err := e.b.WriteTo(w); err != nil {
+	if err := condExists.subQuery.WriteTo(w); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprint(w, ")"); err != nil {
-		return err
-	}
-	return nil
+	_, err := io.WriteString(w, ")")
+	return err
 }
 
-// And implements And with other conditions
-func (e *condExists) And(conds ...Cond) Cond {
-	return And(e, And(conds...))
+func (condExists condExists) And(conds ...Cond) Cond {
+	return And(condExists, And(conds...))
 }
 
-// Or implements Or with other conditions
-func (e *condExists) Or(conds ...Cond) Cond {
-	return Or(e, Or(conds...))
+func (condExists condExists) Or(conds ...Cond) Cond {
+	return Or(condExists, Or(conds...))
 }
 
-// IsValid tests if this Eq is valid
-func (e *condExists) IsValid() bool {
-	return e.b != nil
+func (condExists condExists) IsValid() bool {
+	return condExists.subQuery != nil
 }

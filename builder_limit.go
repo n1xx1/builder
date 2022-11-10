@@ -19,9 +19,11 @@ func (b *Builder) limitWriteTo(w Writer) error {
 		if limit.offset < 0 || limit.limitN <= 0 {
 			return ErrInvalidLimitation
 		}
-		// erase limit condition
+		// unset limit condition to prevent final.WriteTo from recursing forever
 		b.limitation = nil
-		ow := w.(*BytesWriter)
+		defer func() {
+			b.limitation = limit
+		}()
 
 		switch strings.ToLower(strings.TrimSpace(b.dialect)) {
 		case ORACLE:
@@ -34,7 +36,7 @@ func (b *Builder) limitWriteTo(w Writer) error {
 			b.selects = append(selects, columnString("ROWNUM RN"))
 
 			var wb *Builder
-			if b.optype == unionType {
+			if b.optype == setOpType {
 				wb = Dialect(b.dialect).Select("at.*", "ROWNUM RN").
 					From(b, "at")
 			} else {
@@ -57,22 +59,56 @@ func (b *Builder) limitWriteTo(w Writer) error {
 					Where(Gt{"att.RN": limit.offset})
 			}
 
-			return final.WriteTo(ow)
+			return final.WriteTo(w)
 		case SQLITE, MYSQL, POSTGRES:
 			// if type UNION, we need to write previous content back to current writer
-			if b.optype == unionType {
-				if err := b.WriteTo(ow); err != nil {
+			if b.optype == setOpType {
+				if err := b.WriteTo(w); err != nil {
 					return err
 				}
 			}
 
 			if limit.offset == 0 {
-				fmt.Fprint(ow, " LIMIT ", limit.limitN)
+				if _, err := fmt.Fprint(w, " LIMIT ", limit.limitN); err != nil {
+					return err
+				}
 			} else {
-				fmt.Fprintf(ow, " LIMIT %v OFFSET %v", limit.limitN, limit.offset)
+				if _, err := fmt.Fprintf(w, " LIMIT %v OFFSET %v", limit.limitN, limit.offset); err != nil {
+					return err
+				}
 			}
 		case MSSQL:
-			fmt.Fprintf(ow, " OFFSET %v ROWS FETCH NEXT %v ROWS ONLY", limit.offset, limit.limitN)
+			if false {
+				if len(b.selects) == 0 {
+					b.selects = append(b.selects, columnString("*"))
+				}
+
+				var final *Builder
+				selects := b.selects
+				b.selects[0] = &columnMssqlTop{limit.limitN + limit.offset, b.selects[0]}
+				b.selects = append(b.selects, columnString("ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS RN"))
+
+				var wb *Builder
+				if b.optype == setOpType {
+					wb = Dialect(b.dialect).Select("*", "ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS RN").
+						From(b, "at")
+				} else {
+					wb = b
+				}
+
+				if limit.offset == 0 {
+					final = Dialect(b.dialect).From(wb, "at")
+					final.selects = selects // manually patch becuase []Column is not convertible to []interface{}
+				} else {
+					final = Dialect(b.dialect).From(wb, "at").Where(Gt{"at.RN": limit.offset})
+					final.selects = selects // manually patch becuase []Column is not convertible to []interface{}
+				}
+
+				return final.WriteTo(w)
+			}
+			if _, err := fmt.Fprintf(w, " OFFSET %v ROWS FETCH NEXT %v ROWS ONLY", limit.offset, limit.limitN); err != nil {
+				return err
+			}
 		default:
 			return ErrNotSupportType
 		}

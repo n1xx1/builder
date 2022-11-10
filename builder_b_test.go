@@ -31,7 +31,7 @@ func BenchmarkSelect_Simple(b *testing.B) {
 	rgc := randGenConf{allowCond: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery("", &rgc).ToSQL()
+		_, _, _ = randQuery("", &rgc).ToSQL()
 	}
 }
 
@@ -39,14 +39,14 @@ func BenchmarkSelect_SubQuery(b *testing.B) {
 	rgc := randGenConf{allowSubQuery: true, allowCond: true, allowGroupBy: true, allowHaving: true, allowOrderBy: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery("", &rgc).ToSQL()
+		_, _, _ = randQuery("", &rgc).ToSQL()
 	}
 }
 
 func BenchmarkSelect_SelectConditional4Oracle(b *testing.B) {
 	rgc := randGenConf{allowLimit: true, allowCond: true, allowGroupBy: true, allowHaving: true, allowOrderBy: true}
 	for i := 0; i < b.N; i++ {
-		randQuery(ORACLE, &rgc).ToSQL()
+		_, _, _ = randQuery(ORACLE, &rgc).ToSQL()
 	}
 }
 
@@ -54,7 +54,7 @@ func BenchmarkSelect_SelectConditional4Mssql(b *testing.B) {
 	rgc := randGenConf{allowLimit: true, allowCond: true, allowGroupBy: true, allowHaving: true, allowOrderBy: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(MSSQL, &rgc).ToSQL()
+		_, _, _ = randQuery(MSSQL, &rgc).ToSQL()
 	}
 }
 
@@ -62,7 +62,7 @@ func BenchmarkSelect_SelectConditional4MysqlLike(b *testing.B) {
 	rgc := randGenConf{allowLimit: true, allowCond: true, allowGroupBy: true, allowHaving: true, allowOrderBy: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(MYSQL, &rgc).ToSQL()
+		_, _, _ = randQuery(MYSQL, &rgc).ToSQL()
 	}
 }
 
@@ -70,7 +70,7 @@ func BenchmarkSelect_SelectConditional4Mixed(b *testing.B) {
 	rgc := randGenConf{allowLimit: true, allowCond: true, allowGroupBy: true, allowHaving: true, allowOrderBy: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(randDialect(), &rgc).ToSQL()
+		_, _, _ = randQuery(randDialect(), &rgc).ToSQL()
 	}
 }
 
@@ -81,7 +81,7 @@ func BenchmarkSelect_SelectComplex4Oracle(b *testing.B) {
 		allowOrderBy: true, allowSubQuery: true,
 	}
 	for i := 0; i < b.N; i++ {
-		randQuery(ORACLE, &rgc).ToSQL()
+		_, _, _ = randQuery(ORACLE, &rgc).ToSQL()
 	}
 }
 
@@ -93,7 +93,7 @@ func BenchmarkSelect_SelectComplex4Mssql(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(MSSQL, &rgc).ToSQL()
+		_, _, _ = randQuery(MSSQL, &rgc).ToSQL()
 	}
 }
 
@@ -105,7 +105,7 @@ func BenchmarkSelect_SelectComplex4MysqlLike(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(MYSQL, &rgc).ToSQL()
+		_, _, _ = randQuery(MYSQL, &rgc).ToSQL()
 	}
 }
 
@@ -117,7 +117,7 @@ func BenchmarkSelect_SelectComplex4MysqlMixed(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randQuery(randDialect(), &rgc).ToSQL()
+		_, _, _ = randQuery(randDialect(), &rgc).ToSQL()
 	}
 }
 
@@ -125,7 +125,7 @@ func BenchmarkInsert(b *testing.B) {
 	rgc := randGenConf{allowCond: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randInsertByCondition(&rgc).ToSQL()
+		_, _, _ = randInsertByCondition(&rgc).ToSQL()
 	}
 }
 
@@ -133,11 +133,11 @@ func BenchmarkUpdate(b *testing.B) {
 	rgc := randGenConf{allowCond: true}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		randUpdateByCondition(&rgc).ToSQL()
+		_, _, _ = randUpdateByCondition(&rgc).ToSQL()
 	}
 }
 
-// randQuery Generate a basic query for benchmark test. But be careful it's not a executable SQL in real db.
+// randQuery Generate a basic query for benchmark test. But be careful it's not an executable SQL in real db.
 func randQuery(dialect string, rgc *randGenConf) *Builder {
 	b := randSelectByCondition(dialect, rgc)
 	isUnionized := rgc.allowUnion && rand.Intn(1000) >= 500

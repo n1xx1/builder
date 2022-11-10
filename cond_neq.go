@@ -16,8 +16,8 @@ var _ Cond = Neq{}
 
 // WriteTo writes SQL to Writer
 func (neq Neq) WriteTo(w Writer) error {
-	var args = make([]interface{}, 0, len(neq))
-	var i = 0
+	args := make([]interface{}, 0, len(neq))
+	i := 0
 	for _, k := range neq.sortedKeys() {
 		v := neq[k]
 		switch v.(type) {
@@ -25,12 +25,12 @@ func (neq Neq) WriteTo(w Writer) error {
 			if err := NotIn(k, v).WriteTo(w); err != nil {
 				return err
 			}
-		case expr:
+		case *Expression:
 			if _, err := fmt.Fprintf(w, "%s<>(", k); err != nil {
 				return err
 			}
 
-			if err := v.(expr).WriteTo(w); err != nil {
+			if err := v.(*Expression).WriteTo(w); err != nil {
 				return err
 			}
 
@@ -83,7 +83,7 @@ func (neq Neq) IsValid() bool {
 
 // sortedKeys returns all keys of this Neq sorted with sort.Strings.
 // It is used internally for consistent ordering when generating
-// SQL, see https://github.com/go-xorm/builder/issues/10
+// SQL, see https://gitea.com/xorm/builder/issues/10
 func (neq Neq) sortedKeys() []string {
 	keys := make([]string, 0, len(neq))
 	for key := range neq {

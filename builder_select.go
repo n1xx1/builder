@@ -63,7 +63,7 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		}
 
 		switch b.subQuery.optype {
-		case selectType, unionType:
+		case selectType, setOpType:
 			fmt.Fprint(w, " FROM (")
 			if err := b.subQuery.WriteTo(w); err != nil {
 				return err
@@ -79,14 +79,8 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		}
 	}
 
-	for _, v := range b.joins {
-		if _, err := fmt.Fprintf(w, " %s JOIN %s ON ", v.joinType, v.joinTable); err != nil {
-			return err
-		}
-
-		if err := v.joinCond.WriteTo(w); err != nil {
-			return err
-		}
+	if err := b.joins.WriteTo(w); err != nil {
+		return err
 	}
 
 	if b.cond.IsValid() {
@@ -111,9 +105,23 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		}
 	}
 
-	if len(b.orderBy) > 0 {
-		if _, err := fmt.Fprint(w, " ORDER BY ", b.orderBy); err != nil {
-			return err
+	if b.orderBy != nil {
+		switch c := b.orderBy.(type) {
+		case string:
+			if len(c) > 0 {
+				if _, err := fmt.Fprint(w, " ORDER BY ", c); err != nil {
+					return err
+				}
+			}
+		case *Expression:
+			if _, err := fmt.Fprint(w, " ORDER BY "); err != nil {
+				return err
+			}
+			if err := c.WriteTo(w); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknow orderby parameter: %#v", b.orderBy)
 		}
 
 		if b.limitation != nil && b.dialect == MSSQL {
@@ -138,7 +146,7 @@ func (b *Builder) selectWriteTo(w Writer) error {
 }
 
 // OrderBy orderBy SQL
-func (b *Builder) OrderBy(orderBy string) *Builder {
+func (b *Builder) OrderBy(orderBy interface{}) *Builder {
 	b.orderBy = orderBy
 	return b
 }

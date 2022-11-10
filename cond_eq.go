@@ -20,8 +20,9 @@ type Eq map[string]interface{}
 
 var _ Cond = Eq{}
 
-func (eq Eq) opWriteTo(op string, w Writer) error {
-	var i = 0
+// OpWriteTo writes conditions with special operator
+func (eq Eq) OpWriteTo(op string, w Writer) error {
+	i := 0
 	for _, k := range eq.sortedKeys() {
 		v := eq[k]
 		switch v.(type) {
@@ -29,12 +30,12 @@ func (eq Eq) opWriteTo(op string, w Writer) error {
 			if err := In(k, v).WriteTo(w); err != nil {
 				return err
 			}
-		case expr:
+		case *Expression:
 			if _, err := fmt.Fprintf(w, "%s=(", k); err != nil {
 				return err
 			}
 
-			if err := v.(expr).WriteTo(w); err != nil {
+			if err := v.(*Expression).WriteTo(w); err != nil {
 				return err
 			}
 
@@ -63,6 +64,10 @@ func (eq Eq) opWriteTo(op string, w Writer) error {
 				return err
 			}
 			w.Append(int(v.(Decr)))
+		case nil:
+			if _, err := fmt.Fprintf(w, "%s=null", k); err != nil {
+				return err
+			}
 		default:
 			if _, err := fmt.Fprintf(w, "%s=?", k); err != nil {
 				return err
@@ -81,7 +86,7 @@ func (eq Eq) opWriteTo(op string, w Writer) error {
 
 // WriteTo writes SQL to Writer
 func (eq Eq) WriteTo(w Writer) error {
-	return eq.opWriteTo(" AND ", w)
+	return eq.OpWriteTo(" AND ", w)
 }
 
 // And implements And with other conditions
@@ -101,7 +106,7 @@ func (eq Eq) IsValid() bool {
 
 // sortedKeys returns all keys of this Eq sorted with sort.Strings.
 // It is used internally for consistent ordering when generating
-// SQL, see https://github.com/go-xorm/builder/issues/10
+// SQL, see https://gitea.com/xorm/builder/issues/10
 func (eq Eq) sortedKeys() []string {
 	keys := make([]string, 0, len(eq))
 	for key := range eq {
