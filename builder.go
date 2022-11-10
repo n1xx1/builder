@@ -120,7 +120,7 @@ func (b *Builder) From(subject interface{}, aliasMaybe ...string) *Builder {
 	}
 
 	if aliased, ok := subject.(*Aliased); ok {
-		subject = aliased.table
+		subject = aliased.val
 		alias = aliased.alias
 	}
 

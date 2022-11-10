@@ -7,19 +7,29 @@ import (
 )
 
 type Aliased struct {
-	table interface{}
+	val   interface{}
 	alias string
 }
 
-func As(table interface{}, alias string) *Aliased {
-	return &Aliased{table, alias}
+func As(val interface{}, alias string) *Aliased {
+	return &Aliased{val, alias}
 }
 
 func (v *Aliased) IsColumnType() {}
 
 func (v *Aliased) WriteTo(w Writer) error {
-	switch v1 := v.table.(type) {
+	switch v1 := v.val.(type) {
 	case *Builder:
+		if _, err := io.WriteString(w, "("); err != nil {
+			return err
+		}
+		if err := v1.WriteTo(w); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, ") as %s", v.alias); err != nil {
+			return err
+		}
+	case Cond:
 		if _, err := io.WriteString(w, "("); err != nil {
 			return err
 		}
@@ -35,7 +45,7 @@ func (v *Aliased) WriteTo(w Writer) error {
 			return err
 		}
 	default:
-		return errors.New("unknown table type")
+		return errors.New("unknown val type")
 	}
 
 	return nil

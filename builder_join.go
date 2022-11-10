@@ -52,7 +52,7 @@ func (joins joins) WriteTo(w Writer) error {
 		var joinTable = v.joinTable
 		var alias string
 		if aliased, ok := v.joinTable.(*Aliased); ok {
-			joinTable = aliased.table
+			joinTable = aliased.val
 			alias = aliased.alias + " "
 		}
 
