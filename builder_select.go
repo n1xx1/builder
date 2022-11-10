@@ -123,17 +123,6 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		default:
 			return fmt.Errorf("unknow orderby parameter: %#v", b.orderBy)
 		}
-
-		if b.limitation != nil && b.dialect == MSSQL {
-			if err := b.limitWriteTo(w); err != nil {
-				return err
-			}
-		}
-	}
-
-	// limit can only appear after an order by clause
-	if b.limitation != nil && b.dialect == MSSQL {
-		return ErrInvalidLimitation
 	}
 
 	if b.limitation != nil {
