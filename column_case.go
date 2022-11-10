@@ -15,33 +15,35 @@ type columnCase struct {
 }
 
 // Case ...
-func Case(defVal string, whens ...When) interface{} {
+func Case(defVal string, whens ...When) Column {
 	var parts = make([]When, 0, len(whens))
 	for _, val := range whens {
 		parts = append(parts, val)
 	}
-	return columnCase{
+	return &columnCase{
 		parts:  parts,
 		defVal: defVal,
 	}
 }
 
 // CaseAs ...
-func CaseAs(alias string, defVal string, whens ...When) interface{} {
+func CaseAs(alias string, defVal string, whens ...When) Column {
 	var parts = make([]When, 0, len(whens))
 	for _, val := range whens {
 		parts = append(parts, val)
 	}
 	aliasS := new(string)
 	*aliasS = alias
-	return columnCase{
+	return &columnCase{
 		parts:  parts,
 		defVal: defVal,
 		alias:  aliasS,
 	}
 }
 
-func (v columnCase) WriteTo(w Writer) error {
+func (v *columnCase) IsColumnType() {}
+
+func (v *columnCase) WriteTo(w Writer) error {
 	fmt.Fprint(w, "(case ")
 
 	for _, x := range v.parts {
