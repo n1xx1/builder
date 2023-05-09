@@ -304,6 +304,11 @@ func (b *Builder) WriteTo(w Writer) error {
 	return ErrNotSupportType
 }
 
+// Compose calls the function with the current builder
+func (b *Builder) Compose(composer func(b *Builder) *Builder) *Builder {
+	return composer(b)
+}
+
 // ToSQL convert a builder to SQL and args
 func (b *Builder) ToSQL() (string, []interface{}, error) {
 	w := NewWriter()
