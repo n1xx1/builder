@@ -39,6 +39,18 @@ type join struct {
 	joinCond  Cond
 }
 
+type applyType byte
+
+const (
+	applyCross applyType = iota
+	applyOuter
+)
+
+type apply struct {
+	applyType  applyType
+	applyTable interface{}
+}
+
 type setOp struct {
 	opType       string
 	distinctType string
@@ -61,6 +73,7 @@ type Builder struct {
 	cond       Cond
 	selects    []Column
 	joins      joins
+	applies    applies
 	setOps     []setOp
 	limitation *limit
 	insertCols []string

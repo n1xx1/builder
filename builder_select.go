@@ -83,6 +83,10 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		return err
 	}
 
+	if err := b.applyWriteTo(w); err != nil {
+		return err
+	}
+
 	if b.cond.IsValid() {
 		if _, err := fmt.Fprint(w, " WHERE "); err != nil {
 			return err
