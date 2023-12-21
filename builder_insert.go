@@ -22,11 +22,24 @@ func (b *Builder) insertSelectWriteTo(w Writer) error {
 	}
 
 	if len(b.insertCols) > 0 {
-		fmt.Fprintf(w, "(")
-		for _, col := range b.insertCols {
-			fmt.Fprintf(w, col)
+		if _, err := fmt.Fprintf(w, "("); err != nil {
+			return err
 		}
-		fmt.Fprintf(w, ") ")
+
+		for i, col := range b.insertCols {
+			if _, err := fmt.Fprintf(w, col); err != nil {
+				return err
+			}
+
+			if i != len(b.insertCols)-1 {
+				if _, err := fmt.Fprint(w, ","); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := fmt.Fprintf(w, ") "); err != nil {
+			return err
+		}
 	}
 
 	return b.selectWriteTo(w)
