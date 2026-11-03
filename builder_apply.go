@@ -26,40 +26,45 @@ type applies []apply
 func (b *Builder) applyWriteTo(w Writer) error {
 	switch strings.ToLower(strings.TrimSpace(b.dialect)) {
 	case MSSQL:
-		if len(b.applies) > 1 {
-			return ErrNotSupportDialectType
-		}
-		if len(b.applies) == 0 {
-			return nil
-		}
-
-		applyTable := b.applies[0].applyTable
-
-		var alias string
-		if aliased, ok := applyTable.(*Aliased); ok {
-			applyTable = aliased.val
-			alias = aliased.alias + " "
-		}
-
-		applyType := "CROSS"
-		if b.applies[0].applyType == applyOuter {
-			applyType = "OUTER"
-		}
-
-		switch tbl := applyTable.(type) {
-		case *Builder:
-			if _, err := fmt.Fprintf(w, " %s APPLY (", applyType); err != nil {
-				return err
+		for _, a := range b.applies {
+			var alias string
+			if aliased, ok := a.applyTable.(*Aliased); ok {
+				a.applyTable = aliased.val
+				alias = aliased.alias + " "
 			}
-			if err := tbl.WriteTo(w); err != nil {
-				return err
+
+			applyType := "CROSS"
+			if a.applyType == applyOuter {
+				applyType = "OUTER"
 			}
-			if _, err := fmt.Fprintf(w, ") %s", alias); err != nil {
-				return err
-			}
-		case string:
-			if _, err := fmt.Fprintf(w, " %s APPLY %s %s", applyType, tbl, alias); err != nil {
-				return err
+
+			switch tbl := a.applyTable.(type) {
+			case Cond:
+				if tbl.IsValid() {
+					if _, err := fmt.Fprintf(w, " %s APPLY ", applyType); err != nil {
+						return err
+					}
+					if err := tbl.WriteTo(w); err != nil {
+						return err
+					}
+					if _, err := fmt.Fprintf(w, " %s", alias); err != nil {
+						return err
+					}
+				}
+			case *Builder:
+				if _, err := fmt.Fprintf(w, " %s APPLY (", applyType); err != nil {
+					return err
+				}
+				if err := tbl.WriteTo(w); err != nil {
+					return err
+				}
+				if _, err := fmt.Fprintf(w, ") %s", alias); err != nil {
+					return err
+				}
+			case string:
+				if _, err := fmt.Fprintf(w, " %s APPLY %s %s", applyType, tbl, alias); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -79,6 +84,18 @@ func (b *Builder) applyWriteTo(w Writer) error {
 			}
 
 			switch tbl := applyTable.(type) {
+			case Cond:
+				if tbl.IsValid() {
+					if _, err := fmt.Fprintf(w, " %s JOIN LATERAL ", applyType); err != nil {
+						return err
+					}
+					if err := tbl.WriteTo(w); err != nil {
+						return err
+					}
+					if _, err := fmt.Fprintf(w, " %s", alias); err != nil {
+						return err
+					}
+				}
 			case *Builder:
 				if _, err := fmt.Fprintf(w, " %s JOIN LATERAL (", applyType); err != nil {
 					return err
