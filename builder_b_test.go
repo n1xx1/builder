@@ -272,7 +272,7 @@ func randJoin(b *Builder, lessThan int) *Builder {
 
 	for i := 0; i < times; i++ {
 		tableName := randTableName(i * 10)
-		b = b.Join("", tableName, fmt.Sprintf("%v.id = %v.id", b.TableName(), tableName))
+		b = b.join("", tableName, fmt.Sprintf("%v.id = %v.id", b.TableName(), tableName))
 	}
 
 	return b
